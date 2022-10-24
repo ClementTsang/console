@@ -176,9 +176,11 @@ impl View {
     ) {
         match self.state {
             ViewState::TasksList => {
+                self.tasks_list.height = area.height;
                 self.tasks_list.render(&self.styles, frame, area, state, ());
             }
             ViewState::ResourcesList => {
+                self.resources_list.height = area.height;
                 self.resources_list
                     .render(&self.styles, frame, area, state, ());
             }

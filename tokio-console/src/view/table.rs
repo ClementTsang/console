@@ -41,6 +41,7 @@ pub(crate) struct TableListState<T: TableList<N>, const N: usize> {
     pub(crate) selected_column: usize,
     pub(crate) sort_descending: bool,
     pub(crate) table_state: TableState,
+    pub(crate) height: u16,
 
     last_key_event: Option<input::KeyEvent>,
 }
@@ -95,6 +96,8 @@ impl<T: TableList<N>, const N: usize> TableListState<T, N> {
             Char('g') if self.last_key_event.map(|e| e.code) == Some(Char('g')) => {
                 self.scroll_to_first()
             }
+            PageUp => self.scroll_prev_page(),
+            PageDown => self.scroll_next_page(),
             _ => {} // do nothing for now...
         }
 
@@ -148,6 +151,16 @@ impl<T: TableList<N>, const N: usize> TableListState<T, N> {
         })
     }
 
+    pub(in crate::view) fn scroll_next_page(&mut self) {
+        let height = self.height;
+        self.scroll_with(|resources, i| (i + usize::from(height)).clamp(0, resources.len() - 1))
+    }
+
+    pub(in crate::view) fn scroll_prev_page(&mut self) {
+        let height = self.height;
+        self.scroll_with(|_resources, i| i.saturating_sub(usize::from(height)))
+    }
+
     pub(in crate::view) fn scroll_to_last(&mut self) {
         self.scroll_with(|resources, _| resources.len() - 1)
     }
@@ -197,6 +210,7 @@ where
             selected_column,
             sort_descending: false,
             last_key_event: None,
+            height: 0,
         }
     }
 }
