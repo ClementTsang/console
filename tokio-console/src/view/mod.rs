@@ -8,7 +8,9 @@ use tui::{
 };
 
 mod async_ops;
+mod durations;
 mod mini_histogram;
+mod percentiles;
 mod resource;
 mod resources;
 mod styles;
@@ -18,11 +20,14 @@ mod tasks;
 pub(crate) use self::styles::{Palette, Styles};
 pub(crate) use self::table::SortBy;
 
-const DUR_LEN: usize = 6;
 // This data is only updated every second, so it doesn't make a ton of
 // sense to have a lot of precision in timestamps (and this makes sure
 // there's room for the unit!)
+const DUR_LEN: usize = 6;
+// Precision (after decimal point) for durations displayed in a list
+// (detail view)
 const DUR_LIST_PRECISION: usize = 2;
+// Precision (after decimal point) for durations displayed in a table
 const DUR_TABLE_PRECISION: usize = 0;
 const TABLE_HIGHLIGHT_SYMBOL: &str = ">> ";
 
@@ -34,7 +39,7 @@ pub struct View {
     /// details view), we want to leave the task list's state the way we left it
     /// --- e.g., if the user previously selected a particular sorting, we want
     /// it to remain sorted that way when we return to it.
-    tasks_list: TableListState<TasksTable, 11>,
+    tasks_list: TableListState<TasksTable, 12>,
     resources_list: TableListState<ResourcesTable, 9>,
     state: ViewState,
     pub(crate) styles: Styles,
@@ -88,7 +93,7 @@ impl View {
     pub fn new(styles: Styles) -> Self {
         Self {
             state: ViewState::TasksList,
-            tasks_list: TableListState::<TasksTable, 11>::default(),
+            tasks_list: TableListState::<TasksTable, 12>::default(),
             resources_list: TableListState::<ResourcesTable, 9>::default(),
             styles,
         }
