@@ -2,18 +2,23 @@ use crate::{
     input,
     state::{tasks::Task, DetailsRef},
     util::Percentage,
-    view::{self, bold, durations::Durations},
+    view::{
+        self, bold,
+        controls::{controls_paragraph, ControlDisplay, Controls, KeyDisplay},
+        durations::Durations,
+        help::HelpText,
+    },
+};
+use ratatui::{
+    layout::{self, Layout},
+    text::{Span, Spans, Text},
+    widgets::{List, ListItem, Paragraph},
 };
 use std::{
     cell::RefCell,
     cmp,
     rc::Rc,
     time::{Duration, SystemTime},
-};
-use tui::{
-    layout::{self, Layout},
-    text::{Span, Spans, Text},
-    widgets::{Block, List, ListItem, Paragraph},
 };
 
 pub(crate) struct TaskView {
@@ -30,10 +35,10 @@ impl TaskView {
         // TODO :D
     }
 
-    pub(crate) fn render<B: tui::backend::Backend>(
+    pub(crate) fn render<B: ratatui::backend::Backend>(
         &mut self,
         styles: &view::Styles,
-        frame: &mut tui::terminal::Frame<B>,
+        frame: &mut ratatui::terminal::Frame<B>,
         area: layout::Rect,
         now: SystemTime,
     ) {
@@ -48,6 +53,8 @@ impl TaskView {
         let details = details_ref
             .as_ref()
             .filter(|details| details.span_id() == task.span_id());
+
+        let controls = Controls::new(view_controls(), &area, styles);
 
         let warnings: Vec<_> = task
             .warnings()
@@ -74,7 +81,7 @@ impl TaskView {
                 .constraints(
                     [
                         // controls
-                        layout::Constraint::Length(1),
+                        layout::Constraint::Length(controls.height()),
                         // task stats
                         layout::Constraint::Length(10),
                         // poll duration
@@ -94,7 +101,7 @@ impl TaskView {
                 .constraints(
                     [
                         // controls
-                        layout::Constraint::Length(1),
+                        layout::Constraint::Length(controls.height()),
                         // warnings (add 2 for top and bottom borders)
                         layout::Constraint::Length(warnings.len() as u16 + 2),
                         // task stats
@@ -131,14 +138,6 @@ impl TaskView {
             )
             .split(stats_area);
 
-        let controls = Spans::from(vec![
-            Span::raw("controls: "),
-            bold(styles.if_utf8("\u{238B} esc", "esc")),
-            Span::raw(" = return to task list, "),
-            bold("q"),
-            Span::raw(" = quit"),
-        ]);
-
         // Just preallocate capacity for ID, name, target, total, busy, and idle.
         let mut overview = Vec::with_capacity(8);
         overview.push(Spans::from(vec![
@@ -156,10 +155,17 @@ impl TaskView {
             Span::raw(task.target()),
         ]));
 
-        overview.push(Spans::from(vec![
-            bold("Location: "),
-            Span::raw(task.location()),
-        ]));
+        let title = "Location: ";
+        let location_max_width = stats_area[0].width as usize - 2 - title.len(); // NOTE: -2 for the border
+        let location = if task.location().len() > location_max_width {
+            let ellipsis = styles.if_utf8("\u{2026}", "...");
+            let start = task.location().len() - location_max_width + ellipsis.chars().count();
+            format!("{}{}", ellipsis, &task.location()[start..])
+        } else {
+            task.location().to_string()
+        };
+
+        overview.push(Spans::from(vec![bold(title), Span::raw(location)]));
 
         let total = task.total(now);
 
@@ -246,11 +252,27 @@ impl TaskView {
 
         let fields_widget = Paragraph::new(fields).block(styles.border_block().title("Fields"));
 
-        frame.render_widget(Block::default().title(controls), controls_area);
+        frame.render_widget(controls.into_widget(), controls_area);
         frame.render_widget(task_widget, stats_area[0]);
         frame.render_widget(wakers_widget, stats_area[1]);
         frame.render_widget(poll_durations_widget, poll_dur_area);
         frame.render_widget(scheduled_durations_widget, scheduled_dur_area);
         frame.render_widget(fields_widget, fields_area);
     }
+}
+
+impl HelpText for TaskView {
+    fn render_help_content(&self, styles: &view::Styles) -> Paragraph<'static> {
+        controls_paragraph(view_controls(), styles)
+    }
+}
+
+const fn view_controls() -> &'static [ControlDisplay] {
+    &[ControlDisplay {
+        action: "return to task list",
+        keys: &[KeyDisplay {
+            base: "esc",
+            utf8: Some("\u{238B} esc"),
+        }],
+    }]
 }

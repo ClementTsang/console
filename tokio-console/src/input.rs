@@ -1,4 +1,4 @@
-// TODO(eliza): support TUI backends other than crossterm?
+// TODO(eliza): support Ratatui backends other than crossterm?
 // This would probably involve using `spawn_blocking` to drive their blocking
 // input-handling mechanisms in the background...
 pub use crossterm::event::*;
@@ -13,10 +13,12 @@ pub fn should_quit(input: &Event) -> bool {
         Key(KeyEvent {
             code: Char('c'),
             modifiers,
+            ..
         })
         | Key(KeyEvent {
             code: Char('d'),
             modifiers,
+            ..
         }) if modifiers.contains(KeyModifiers::CONTROL) => true,
         _ => false,
     }
@@ -27,6 +29,26 @@ pub(crate) fn is_space(input: &Event) -> bool {
         input,
         Event::Key(KeyEvent {
             code: KeyCode::Char(' '),
+            ..
+        })
+    )
+}
+
+pub(crate) fn is_help_toggle(event: &Event) -> bool {
+    matches!(
+        event,
+        Event::Key(KeyEvent {
+            code: KeyCode::Char('?'),
+            ..
+        })
+    )
+}
+
+pub(crate) fn is_esc(event: &Event) -> bool {
+    matches!(
+        event,
+        Event::Key(KeyEvent {
+            code: KeyCode::Esc,
             ..
         })
     )

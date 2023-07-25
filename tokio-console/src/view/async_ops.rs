@@ -1,3 +1,4 @@
+pub(crate) use crate::view::table::view_controls;
 use crate::{
     state::{
         async_ops::{AsyncOp, SortBy},
@@ -6,12 +7,13 @@ use crate::{
     },
     view::{
         self, bold,
-        table::{self, TableList, TableListState},
+        controls::Controls,
+        table::{TableList, TableListState},
         DUR_LEN, DUR_TABLE_PRECISION,
     },
 };
 
-use tui::{
+use ratatui::{
     layout,
     style::{self, Color, Style},
     text::Spans,
@@ -55,10 +57,10 @@ impl TableList<9> for AsyncOpsTable {
         Self::HEADER[8].len() + 1,
     ];
 
-    fn render<B: tui::backend::Backend>(
+    fn render<B: ratatui::backend::Backend>(
         table_list_state: &mut TableListState<Self, 9>,
         styles: &view::Styles,
-        frame: &mut tui::terminal::Frame<B>,
+        frame: &mut ratatui::terminal::Frame<B>,
         area: layout::Rect,
         state: &mut State,
         ctx: Self::Context,
@@ -197,11 +199,11 @@ impl TableList<9> for AsyncOpsTable {
             .direction(layout::Direction::Vertical)
             .margin(0);
 
-        let controls = table::Controls::for_area(&area, styles);
+        let controls = Controls::new(view_controls(), &area, styles);
         let chunks = layout
             .constraints(
                 [
-                    layout::Constraint::Length(controls.height),
+                    layout::Constraint::Length(controls.height()),
                     layout::Constraint::Max(area.height),
                 ]
                 .as_ref(),
@@ -232,7 +234,7 @@ impl TableList<9> for AsyncOpsTable {
             .highlight_style(Style::default().add_modifier(style::Modifier::BOLD));
 
         frame.render_stateful_widget(table, async_ops_area, &mut table_list_state.table_state);
-        frame.render_widget(controls.paragraph, controls_area);
+        frame.render_widget(controls.into_widget(), controls_area);
 
         table_list_state
             .sorted_items

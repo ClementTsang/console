@@ -5,6 +5,10 @@ use crate::{
     warnings::Linter,
 };
 use console_api as proto;
+use ratatui::{
+    style::{Color, Modifier},
+    text::Span,
+};
 use std::{
     cell::RefCell,
     cmp::Ordering,
@@ -15,10 +19,6 @@ use std::{
     time::{Duration, SystemTime},
 };
 use tasks::{Details, Task, TasksState};
-use tui::{
-    style::{Color, Modifier},
-    text::Span,
-};
 
 pub mod async_ops;
 pub mod histogram;
@@ -522,7 +522,7 @@ fn format_location(loc: Option<proto::Location>) -> String {
             let truncated = truncate_registry_path(file);
             l.file = Some(truncated);
         }
-        format!("{} ", l)
+        l.to_string()
     })
     .unwrap_or_else(|| "<unknown location>".to_string())
 }
